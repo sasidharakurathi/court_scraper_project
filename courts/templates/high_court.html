@@ -1,0 +1,146 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="card shadow p-4">
+  <h4 class="mb-3">High Court Scraper</h4>
+
+  <!-- High Court Scraper Form -->
+  <form id="highCourtForm" method="POST">
+    {% csrf_token %}
+
+    <!-- High Court -->
+    <div class="mb-3">
+      <label class="form-label">Select High Court</label>
+      <select id="highCourt" name="highCourt" class="form-select" required>
+        <option value="">-- Select High Court --</option>
+      </select>
+    </div>
+
+    <!-- Bench -->
+    <div class="mb-3">
+      <label class="form-label">Select Bench</label>
+      <select id="bench" name="bench" class="form-select" disabled required>
+        <option value="">-- Select Bench --</option>
+      </select>
+    </div>
+
+    <!-- Case Type -->
+    <div class="mb-3">
+      <label class="form-label">Select Case Type</label>
+      <select id="caseType" name="caseType" class="form-select" disabled required>
+        <option value="">-- Select Case Type --</option>
+      </select>
+    </div>
+
+    <!-- Case Number -->
+    <div class="mb-3">
+      <label class="form-label">Case Number</label>
+      <input type="number" id="caseNumber" name="caseNumber" class="form-control" required>
+    </div>
+
+    <!-- Year -->
+    <div class="mb-3">
+      <label class="form-label">Year</label>
+      <input type="number" id="year" name="year" class="form-control" required>
+    </div>
+
+    <!-- Captcha -->
+    <div class="mb-3">
+      <label class="form-label">Captcha</label>
+      <div class="d-flex align-items-center">
+        <img id="captchaImage" src="" alt="Captcha" class="me-3 border rounded" style="height:50px;">
+        <button type="button" class="btn btn-outline-secondary btn-sm" id="refreshCaptcha">Refresh</button>
+      </div>
+      <input type="text" id="captchaText" name="captchaText" class="form-control mt-2" placeholder="Enter captcha" required>
+    </div>
+
+    <!-- Submit -->
+    <div class="d-grid">
+      <button type="submit" class="btn btn-primary">Fetch</button>
+    </div>
+  </form>
+</div>
+
+<!-- Results -->
+<div id="results" class="mt-4"></div>
+
+<!-- jQuery -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+<script>
+$(document).ready(function() {
+  // 1. Load High Courts
+  $.getJSON("/api/highcourts/", function(data) {
+    $("#highCourt").append(data.map(item => `<option value="${item.id}">${item.name}</option>`));
+  });
+
+  // 2. Load Benches on High Court selection
+  $("#highCourt").change(function() {
+    let courtId = $(this).val();
+    $("#bench").prop("disabled", true).html('<option>Loading...</option>');
+    $.getJSON(`/api/benches/${courtId}/`, function(data) {
+      $("#bench").prop("disabled", false).html('<option value="">-- Select Bench --</option>');
+      data.forEach(item => $("#bench").append(`<option value="${item.id}">${item.name}</option>`));
+    });
+  });
+
+  // 3. Load Case Types on Bench selection
+  $("#bench").change(function() {
+    let benchId = $(this).val();
+    $("#caseType").prop("disabled", true).html('<option>Loading...</option>');
+    $.getJSON(`/api/casetypes/${benchId}/`, function(data) {
+      $("#caseType").prop("disabled", false).html('<option value="">-- Select Case Type --</option>');
+      data.forEach(item => $("#caseType").append(`<option value="${item.id}">${item.name}</option>`));
+    });
+    loadCaptcha();
+  });
+
+  // 4. Captcha loader
+  function loadCaptcha() {
+    $.getJSON("/api/captcha/", function(data) {
+      $("#captchaImage").attr("src", "data:image/png;base64," + data.image_base64);
+    });
+  }
+  
+
+  $("#refreshCaptcha").click(loadCaptcha);
+
+  // 5. Submit Form via AJAX
+  $("#highCourtForm").submit(function(e) {
+    e.preventDefault();
+    let formData = {
+      highCourt: $("#highCourt").val(),
+      bench: $("#bench").val(),
+      caseType: $("#caseType").val(),
+      caseNumber: $("#caseNumber").val(),
+      year: $("#year").val(),
+      captchaText: $("#captchaText").val(),
+      captchaToken: $("#captchaImage").data("token"),
+      csrfmiddlewaretoken: $("input[name=csrfmiddlewaretoken]").val()
+    };
+
+    $.ajax({
+      url: "/api/fetch-case/",
+      method: "POST",
+      contentType: "application/json",
+      data: JSON.stringify(formData),
+      success: function(response) {
+        $("#results").html(`
+          <div class="alert alert-success">
+            <h5>Case Details</h5>
+            <p><strong>Parties:</strong> ${response.parties}</p>
+            <p><strong>Status:</strong> ${response.status}</p>
+            <p><strong>Next Hearing:</strong> ${response.next_hearing}</p>
+            <a href="${response.judgment_pdf}" target="_blank" class="btn btn-sm btn-primary">Download Judgment</a>
+          </div>
+        `);
+      },
+      error: function(xhr) {
+        $("#results").html(`<div class="alert alert-danger">Error: ${xhr.responseText}</div>`);
+      }
+    });
+  });
+});
+</script>
+
+{% endblock %}

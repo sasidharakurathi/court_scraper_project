@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="card shadow p-4">
+  <h4 class="mb-3">Query Logs & Statistics</h4>
+  <p><strong>Total Queries:</strong> {{ stats.total_queries }}</p>
+  <p><strong>Cases Found:</strong> {{ stats.cases_found }}</p>
+
+  <h5 class="mt-4">Recent Queries</h5>
+  <table class="table table-striped">
+    <thead>
+      <tr>
+        <th>Case Type</th>
+        <th>Case Number</th>
+        <th>Year</th>
+        <th>Requested At</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for log in logs %}
+      <tr>
+        <td>{{ log.case_type }}</td>
+        <td>{{ log.case_number }}</td>
+        <td>{{ log.year }}</td>
+        <td>{{ log.requested_at }}</td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="4">No queries yet.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

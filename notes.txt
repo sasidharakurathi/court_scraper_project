@@ -1,0 +1,19 @@
+
+
+high court:         https://hcservices.ecourts.gov.in/hcservices/main.php 
+district court:     https://services.ecourts.gov.in/ecourtindia_v6/
+
+
+High Court Scraper:
+    Select High Court
+    Select Bench
+
+    Select Case Type
+    Case Number (input_type = number)
+    Year (input_type = number)
+    Image (to display the captcha)
+    Enter captcha (input_type = text)
+    Fetch button (submit form)
+
+
+<select class="form-select form-select-sm col SDC_Select" id="court_complex_code" onchange="funShowDefaultTab();" aria-describedby="Select_alert"><option value="0">Select Bench</option><option value="1">Allahabad High Court</option><option value="2">Allahabad High Court Lucknow Bench</option></select>

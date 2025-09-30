@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="card shadow p-4">
+  <h4 class="mb-3">District Court Scraper</h4>
+  <form method="POST">
+    {% csrf_token %}
+    <div class="mb-3">
+      <label class="form-label">Case Type</label>
+      <input type="text" name="case_type" class="form-control" required>
+    </div>
+    <div class="mb-3">
+      <label class="form-label">Case Number</label>
+      <input type="text" name="case_number" class="form-control" required>
+    </div>
+    <div class="mb-3">
+      <label class="form-label">Year</label>
+      <input type="number" name="year" class="form-control" required>
+    </div>
+    <button type="submit" class="btn btn-primary">Fetch</button>
+  </form>
+</div>
+{% endblock %}
