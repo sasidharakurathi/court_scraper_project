@@ -1,3 +1,5 @@
+from django.conf import settings
+
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service as ChromeService
 from webdriver_manager.chrome import ChromeDriverManager
@@ -7,9 +9,11 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import Select
 
 import base64
-from io import BytesIO
-from PIL import Image
 import time
+
+from bs4 import BeautifulSoup
+import requests
+import os
 
 class CourtScraper:
     def __init__(self):
@@ -21,10 +25,17 @@ class CourtScraper:
         self.wait = WebDriverWait(self.driver, 10)
     
     def __init_options(self):
-        # self.options.add_argument("--headless")
-        # self.options.add_argument("--disable-gpu")
+        self.options.add_argument("--headless")
+        self.options.add_argument("--disable-gpu")
         self.options.add_argument("--window-size=1920x1080")
         self.options.add_experimental_option("detach", True)
+    
+    def safe_click(self, element):
+        try:
+            element.click()
+        except:
+            self.driver.execute_script("arguments[0].click();", element)
+
         
 class HighCourtScraper(CourtScraper):
     def __init__(self,url="https://hcservices.ecourts.gov.in/hcservices/main.php"):
@@ -36,9 +47,11 @@ class HighCourtScraper(CourtScraper):
         case_status_anchor = self.wait.until(EC.visibility_of_element_located((By.ID, 'leftPaneMenuCS')))
         self.driver.execute_script("arguments[0].click();", case_status_anchor)
         
-        self.wait.until(
+        modal_ok_button = self.wait.until(
             EC.visibility_of_element_located((By.XPATH, "//button[text()='OK']"))
-        ).click()
+        )
+        
+        self.safe_click(modal_ok_button)
     
     def fetch_highcourt_list(self):
         highcourt_select = self.wait.until(
@@ -108,9 +121,10 @@ class HighCourtScraper(CourtScraper):
         select.select_by_value(str(bench_id))
         self.driver.execute_script("arguments[0].dispatchEvent(new Event('change'))", bench_select_elem)
         
-        self.wait.until(
+        case_number_button = self.wait.until(
             EC.element_to_be_clickable((By.ID, "CScaseNumber"))
-        ).click()
+        )
+        self.safe_click(case_number_button)
         
     def select_case_type(self, case_type_id):
         # case_type
@@ -158,8 +172,14 @@ class HighCourtScraper(CourtScraper):
         refresh_btn = self.wait.until(
             EC.element_to_be_clickable((By.CLASS_NAME, "refresh-btn"))
         )
+        
+        # self.driver.execute_script("arguments[0].scrollIntoView(true);", refresh_btn)
 
-        refresh_btn.click()
+        # refresh_btn.click()
+        
+        # Direct JS click
+        # self.driver.execute_script("arguments[0].click();", refresh_btn)
+        self.safe_click(refresh_btn)
 
         time.sleep(1)  
     
@@ -183,21 +203,12 @@ class HighCourtScraper(CourtScraper):
         go_btn = self.wait.until(
             EC.element_to_be_clickable((By.XPATH, "//input[@value='Go' and @class='Gobtn']"))
         )
-        go_btn.click()
+        # go_btn.click()
+        self.safe_click(go_btn)
         time.sleep(1)
     
     
-    def click_view_by_full_case_number(self, case_type_text, case_number, year):
-        
-        temp = ""
-        for c in str(case_type_text):
-            if c == "(":
-                break
-            temp += c
-        
-        case_type_text = temp
-
-        full_case_number = str(case_type_text) + "/" + str(case_number) + "/" + str(year)
+    def click_view_by_full_case_number(self, full_case_number):
         
         
         self.wait.until(
@@ -216,7 +227,8 @@ class HighCourtScraper(CourtScraper):
             
         self.wait.until(EC.element_to_be_clickable((By.XPATH, ".//a[text()='View']")))
         
-        view_link.click()
+        # view_link.click()
+        self.safe_click(view_link)
 
 
     
@@ -228,15 +240,159 @@ class HighCourtScraper(CourtScraper):
         
         self.click_go_button()
         
+        temp = ""
+        for c in str(case_type_text):
+            if c == "(":
+                break
+            temp += c
+        
+        case_type_text = temp
+
+        full_case_number = str(case_type_text) + "/" + str(case_number) + "/" + str(year)
+        
         for _ in range(3):
             try:
-                self.click_view_by_full_case_number(case_type_text, case_number, year)
+                self.click_view_by_full_case_number(full_case_number)
                 break
             except:
                 time.sleep(1)
+                
+        case_results = self.wait.until(EC.presence_of_element_located((By.XPATH, "//div[@align='center'][.//div[@id='caseBusinessDiv4']]")))
+        html_content = case_results.get_attribute("innerHTML")
+        json_result = self.parse_full_case_with_pdf(html_content, full_case_number)
 
+        # print(f"{json_result = }")
         
         print("Done: ")
+        
+        return json_result 
+        
+    def parse_full_case_with_pdf(self, html, full_case_number):
+        soup = BeautifulSoup(html, "html.parser")
+        result = {}
+
+        # --- Case Details ---
+        case_table = soup.find("table", class_="case_details_table")
+        case_details = {}
+        if case_table:
+            rows = case_table.find_all("tr")
+            for row in rows:
+                cols = row.find_all("td")
+                for i in range(0, len(cols), 2):
+                    key = cols[i].get_text(strip=True)
+                    value = cols[i+1].get_text(strip=True)
+                    case_details[key] = value
+        result["case_details"] = case_details
+
+        # --- Case Status ---
+        status_table = soup.find("table", class_="table_r")
+        case_status = {}
+        if status_table:
+            for row in status_table.find_all("tr"):
+                cols = row.find_all("td")
+                key = cols[0].get_text(strip=True)
+                value = cols[1].get_text(strip=True)
+                case_status[key] = value
+        result["case_status"] = case_status
+
+        # --- Petitioner and Respondent ---
+        petitioner = soup.find("span", class_="Petitioner_Advocate_table")
+        respondent = soup.find("span", class_="Respondent_Advocate_table")
+        result["petitioner"] = petitioner.get_text(strip=True) if petitioner else ""
+        result["respondent"] = respondent.get_text(strip=True) if respondent else ""
+
+        # --- Category Details ---
+        category_table = soup.find("table", id="subject_table")
+        category_details = {}
+        if category_table:
+            for row in category_table.find_all("tr"):
+                cols = row.find_all("td")
+                key = cols[0].get_text(strip=True)
+                value = cols[1].get_text(strip=True)
+                category_details[key] = value
+        result["category_details"] = category_details
+
+        # --- IA Details ---
+        ia_table = soup.find("table", class_="IAheading")
+        ia_list = []
+        if ia_table:
+            rows = ia_table.find_all("tr")[1:]  # skip header
+            for row in rows:
+                cols = [col.get_text(strip=True) for col in row.find_all("td")]
+                if cols:
+                    ia_list.append({
+                        "IA Number": cols[0],
+                        "Party": cols[1],
+                        "Date of Filing": cols[2],
+                        "Next Date": cols[3],
+                        "IA Status": cols[4]
+                    })
+        result["ia_details"] = ia_list
+
+        # --- Case History ---
+        history_table = soup.find("table", class_="history_table")
+        history_list = []
+        if history_table:
+            rows = history_table.find_all("tr")[1:]  # skip header
+            for row in rows:
+                cols = [col.get_text(strip=True) for col in row.find_all("td")]
+                if cols:
+                    history_list.append({
+                        "Cause List Type": cols[0],
+                        "Judge": cols[1],
+                        "Business On Date": cols[2],
+                        "Hearing Date": cols[3],
+                        "Purpose of hearing": cols[4]
+                    })
+        result["case_history"] = history_list
+
+        # --- Orders ---
+        orders_table = soup.find("table", class_="order_table")
+        orders_list = []
+        if orders_table:
+            rows = orders_table.find_all("tr")[1:]  # skip header
+            for row in rows:
+                cols = row.find_all("td")
+                if cols:
+                    # extract the PDF link if available
+                    link_tag = cols[4].find("a")
+                    pdf_url =  None
+                    
+                    if link_tag:
+                        # link_tag["href"]
+                        url = "https://hcservices.ecourts.gov.in/hcservices/" + link_tag["href"]
+                        pdf_url = self.download_pdf(url,full_case_number, cols[3].get_text(strip=True))
+
+                    orders_list.append({
+                        "Order Number": cols[0].get_text(strip=True),
+                        "Order on": cols[1].get_text(strip=True),
+                        "Judge": cols[2].get_text(strip=True),
+                        "Order Date": cols[3].get_text(strip=True),
+                        "Order Details": cols[4].get_text(strip=True),
+                        "PDF URL": str(pdf_url)
+                    })
+        result["orders"] = orders_list
+
+        return result
+    
+    def download_pdf(self, url, full_case_number, order_date):
+        cookies = self.driver.get_cookies()
+        cookies_dict = {c['name']: c['value'] for c in cookies}
+        
+        response = requests.get(url, cookies=cookies_dict, headers={'User-Agent': 'Mozilla/5.0'})
+        
+        full_case_number = full_case_number.replace('/', '_')
+        order_date = order_date.replace('-', '')
+        pdf_filename = f"{full_case_number}_{order_date}.pdf"
+        
+        save_dir = settings.ORDERS_PDF_DIR
+        os.makedirs(save_dir, exist_ok=True)  # ensure folder exists
+        pdf_path = os.path.join(save_dir, pdf_filename)
+        
+        with open(pdf_path, "wb") as f:
+            f.write(response.content)
+        
+        return f"/static/highcourt/orders_pdf/{pdf_filename}"
 
 
 if __name__ == "__main__":

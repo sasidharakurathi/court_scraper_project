@@ -3,6 +3,7 @@ from django.views.decorators.csrf import csrf_exempt
 from django.http import JsonResponse
 import time
 import json
+import os
 # from .models import QueryLog, Case
 
 from .scraper import HighCourtScraper
@@ -10,6 +11,7 @@ highcourt_scraper = HighCourtScraper(url="https://hcservices.ecourts.gov.in/hcse
 
 def home(request):
     # highcourt_scraper.navigate_to_case_status()
+    # print(': ',os.getcwd())
     return render(request, "home.html")
 
 def high_court_scraper_view(request):
@@ -72,5 +74,5 @@ def fetch_case(request):
     
     
     data = highcourt_scraper.fetch_case(case_type_id, case_number, year, captcha, case_type_text)
-    return JsonResponse({})
+    return JsonResponse(data, safe=False)
     
