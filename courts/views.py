@@ -2,6 +2,7 @@ from django.shortcuts import render
 from django.views.decorators.csrf import csrf_exempt
 from django.http import JsonResponse
 import time
+import json
 # from .models import QueryLog, Case
 
 from .scraper import HighCourtScraper
@@ -60,5 +61,16 @@ def get_captcha(request):
 
 @csrf_exempt
 def fetch_case(request):
+    data = json.loads(request.body.decode('utf-8'))
+    print(f"{data = }")
+    
+    case_type_id = data.get("caseType")
+    case_number = data.get("caseNumber")
+    year = data.get("year")
+    captcha = data.get("captchaText")
+    case_type_text = data.get("caseTypeText")
+    
+    
+    data = highcourt_scraper.fetch_case(case_type_id, case_number, year, captcha, case_type_text)
     return JsonResponse({})
     

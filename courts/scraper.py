@@ -21,10 +21,10 @@ class CourtScraper:
         self.wait = WebDriverWait(self.driver, 10)
     
     def __init_options(self):
-        # self.options.add_argument("--headless")  # You can uncomment this to run without a UI
+        # self.options.add_argument("--headless")
         # self.options.add_argument("--disable-gpu")
         self.options.add_argument("--window-size=1920x1080")
-        self.options.add_experimental_option("detach", True)  # <-- keeps browser open
+        self.options.add_experimental_option("detach", True)
         
 class HighCourtScraper(CourtScraper):
     def __init__(self,url="https://hcservices.ecourts.gov.in/hcservices/main.php"):
@@ -34,7 +34,6 @@ class HighCourtScraper(CourtScraper):
     def navigate_to_case_status(self):
         self.driver.get(self.url)
         case_status_anchor = self.wait.until(EC.visibility_of_element_located((By.ID, 'leftPaneMenuCS')))
-        # case_status_anchor.click()
         self.driver.execute_script("arguments[0].click();", case_status_anchor)
         
         self.wait.until(
@@ -42,62 +41,53 @@ class HighCourtScraper(CourtScraper):
         ).click()
     
     def fetch_highcourt_list(self):
-        # Locate the High Court <select> element
         highcourt_select = self.wait.until(
             EC.presence_of_element_located((By.ID, "sess_state_code"))
         )
 
-        # Get all options
         options = highcourt_select.find_elements(By.TAG_NAME, "option")
 
-        # Prepare a list of dictionaries
         high_courts = []
         for opt in options:
             value = opt.get_attribute("value")
             text = opt.text.strip()
-            if value != "0":  # skip the default
+            if value != "0":
                 high_courts.append({"id": value, "name": text})
 
         return high_courts
 
     def fetch_bench_list(self):
-        # court_complex_code
         
         bench_select = self.wait.until(
             EC.presence_of_element_located((By.ID, "court_complex_code"))
         )
         
-        # Get all options
         options = bench_select.find_elements(By.TAG_NAME, "option")
         
-        # Prepare a list of dictionaries
         benches = []
         for opt in options:
             value = opt.get_attribute("value")
             text = opt.text.strip()
-            if value != "0":  # skip the default
+            if value != "0":
                 benches.append({"id": value, "name": text})
         # print(f"{benches = }")
         return benches
 
     def fetch_case_types(self):
-        # case_type
         
         case_type_select = self.wait.until(
             EC.presence_of_element_located((By.ID, "case_type"))
         )
         
-        # Get all options
         options = case_type_select.find_elements(By.TAG_NAME, "option")
         
-        # Prepare a list of dictionaries
         case_types = []
         for opt in options:
             value = opt.get_attribute("value")
             text = opt.text.strip()
-            if value != "0":  # skip the default
+            if value != "0":
                 case_types.append({"id": value, "name": text})
-        print(f"{case_types = }")
+        # print(f"{case_types = }")
         return case_types
     
     def select_highcourt_by_id(self, highcourt_id):
@@ -122,13 +112,53 @@ class HighCourtScraper(CourtScraper):
             EC.element_to_be_clickable((By.ID, "CScaseNumber"))
         ).click()
         
+    def select_case_type(self, case_type_id):
+        # case_type
+        
+        case_type_select_elem = self.wait.until(
+            EC.presence_of_element_located((By.ID, "case_type"))
+        )
+        
+        select = Select(case_type_select_elem)
+        select.select_by_value(str(case_type_id))
+        self.driver.execute_script("arguments[0].dispatchEvent(new Event('change'))", case_type_select_elem)
+        time.sleep(1)
+        
+    def set_case_number(self, case_number):
+        # search_case_no
+        
+        case_number_input_elem = self.wait.until(
+            EC.visibility_of_element_located((By.ID, "search_case_no"))
+        )
+        case_number_input_elem.clear()
+        case_number_input_elem.send_keys(str(case_number))
+        time.sleep(1)
+        
+    def set_year(self, year):
+        # rgyear
+        
+        year_input_elem = self.wait.until(
+            EC.visibility_of_element_located((By.ID, "rgyear"))
+        )
+        year_input_elem.clear()
+        year_input_elem.send_keys(str(year))
+        time.sleep(1)
+        
+    def set_captcha(self, captcha):
+        # captcha
+        
+        captcha_input_elem = self.wait.until(
+            EC.visibility_of_element_located((By.ID, "captcha"))
+        )
+        captcha_input_elem.clear()
+        captcha_input_elem.send_keys(str(captcha))
+        time.sleep(1)
+        
     def refresh_captcha(self):
-        # Wait until the refresh button is clickable
         refresh_btn = self.wait.until(
             EC.element_to_be_clickable((By.CLASS_NAME, "refresh-btn"))
         )
 
-        # Click it
         refresh_btn.click()
 
         time.sleep(1)  
@@ -138,86 +168,75 @@ class HighCourtScraper(CourtScraper):
         
         self.refresh_captcha()
         
-        # Wait for captcha image element
         captcha_elem = self.wait.until(
             EC.visibility_of_element_located((By.ID, "captcha_image"))
         )
 
-        # Take screenshot of the element
-        png = captcha_elem.screenshot_as_png  # raw PNG bytes
+        png = captcha_elem.screenshot_as_png
 
-        # Convert to base64 string to send via JSON
         b64_png = base64.b64encode(png).decode("utf-8")
 
         return b64_png
 
-
-
-# def get_states():
-#     """
-#     Uses Selenium to scrape the list of states from the eCourts website.
-#     Returns a list of dictionaries, each containing the state's name and value.
-#     """
-#     # Setup Selenium WebDriver
-#     options = webdriver.ChromeOptions()
-#     # options.add_argument("--headless")  # You can uncomment this to run without a UI
-#     # options.add_argument("--disable-gpu")
-#     options.add_argument("--window-size=1920x1080")
-
-#     driver = webdriver.Chrome(service=ChromeService(ChromeDriverManager().install()), options=options)
-
-#     states = []
-#     try:
-#         # Navigate to the website
-#         url = 'https://services.ecourts.gov.in/ecourtindia_v6/'
-#         driver.get(url)
-#         wait = WebDriverWait(driver, 10)
+    def click_go_button(self):
+        # Gobtn
+        go_btn = self.wait.until(
+            EC.element_to_be_clickable((By.XPATH, "//input[@value='Go' and @class='Gobtn']"))
+        )
+        go_btn.click()
+        time.sleep(1)
+    
+    
+    def click_view_by_full_case_number(self, case_type_text, case_number, year):
         
-#         # Navigate to the Case Status page
-#         case_status_anchor = wait.until(EC.visibility_of_element_located((By.ID, 'leftPaneMenuCS')))
-#         case_status_url = case_status_anchor.get_attribute('href')
+        temp = ""
+        for c in str(case_type_text):
+            if c == "(":
+                break
+            temp += c
         
-#         if not case_status_url:
-#             print("Could not find the Case Status URL.")
-#             return [] # Return empty list if URL not found
+        case_type_text = temp
+
+        full_case_number = str(case_type_text) + "/" + str(case_number) + "/" + str(year)
+        
+        
+        self.wait.until(
+            EC.presence_of_element_located((By.XPATH, "//tbody/tr"))
+        )
+
+        row = self.wait.until(
+            EC.presence_of_element_located(
+                (By.XPATH, f"//td[contains(text(), '{full_case_number}')]/..")
+            )
+        )
+
+        self.driver.execute_script("arguments[0].scrollIntoView(true);", row)
+        
+        view_link = row.find_element(By.XPATH, ".//a[text()='View']")
             
-#         driver.get(case_status_url)
-#         print(f"Successfully navigated to: {driver.current_url}")
-
-#         # --- NEW CODE STARTS HERE ---
-
-#         # 1. Wait for the state dropdown to be visible
-#         state_dropdown = wait.until(
-#             EC.visibility_of_element_located((By.ID, "sess_state_code"))
-#         )
+        self.wait.until(EC.element_to_be_clickable((By.XPATH, ".//a[text()='View']")))
         
-#         # 2. Find all the <option> elements within the dropdown
-#         options_list = state_dropdown.find_elements(By.TAG_NAME, "option")
+        view_link.click()
+
+
+    
+    def fetch_case(self, case_type_id, case_number, year, captcha, case_type_text):
+        self.select_case_type(case_type_id)
+        self.set_case_number(case_number)
+        self.set_year(year)
+        self.set_captcha(captcha)
         
-#         print(f"Found {len(options_list)} options in the dropdown.")
+        self.click_go_button()
+        
+        for _ in range(3):
+            try:
+                self.click_view_by_full_case_number(case_type_text, case_number, year)
+                break
+            except:
+                time.sleep(1)
 
-#         # 3. Loop through each option to scrape its details
-#         for option in options_list:
-#             # Get the value attribute (e.g., '1', '2', etc.)
-#             state_value = option.get_attribute('value')
-            
-#             # Get the visible text (e.g., 'Andaman and Nicobar Portblair')
-#             state_name = option.text
-            
-#             # 4. Skip the first disabled option ("Select State") and add the rest
-#             if state_value: # This check skips options with an empty value
-#                 states.append({
-#                     "name": state_name.strip(),
-#                     "value": state_value
-#                 })
-
-#     except Exception as e:
-#         print(f"An error occurred: {e}")
-
-#     finally:
-#         driver.quit() # Always close the browser
-
-#     return states
+        
+        print("Done: ")
 
 
 if __name__ == "__main__":
