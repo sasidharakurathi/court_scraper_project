@@ -131,4 +131,9 @@ STATIC_URL = 'static/'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-ORDERS_PDF_DIR = os.path.join(BASE_DIR, "static", "highcourt", "orders_pdf")
+STATIC_HIGHCOURT_ORDERS_PDF_DIR = os.path.join("static", "highcourt", "orders_pdf")
+HIGHCOURT_ORDERS_PDF_DIR = os.path.join(BASE_DIR, STATIC_HIGHCOURT_ORDERS_PDF_DIR)
+
+STATIC_HIGHCOURT_CASELIST_PDF_DIR = os.path.join("static", "highcourt", "case_lists")
+HIGHCOURT_CASELIST_PDF_DIR = os.path.join(BASE_DIR, STATIC_HIGHCOURT_CASELIST_PDF_DIR)
+

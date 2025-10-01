@@ -1,122 +1,252 @@
 {% extends "base.html" %}
 {% block content %}
 
-<div class="card shadow p-4">
-  <h4 class="mb-3">High Court Scraper</h4>
+<!-- Tabs for switching -->
+<ul class="nav nav-tabs mb-4" id="courtTabs" role="tablist">
+  <li class="nav-item" role="presentation">
+    <button class="nav-link active" id="case-tab" data-bs-toggle="tab" data-bs-target="#caseTab" type="button" role="tab">Case Details</button>
+  </li>
+  <li class="nav-item" role="presentation">
+    <button class="nav-link" id="cause-tab" data-bs-toggle="tab" data-bs-target="#causeTab" type="button" role="tab">Cause List</button>
+  </li>
+</ul>
 
-  <!-- High Court Scraper Form -->
-  <form id="highCourtForm" method="POST">
-    {% csrf_token %}
+<div class="tab-content">
+  <!-- High Court Case Fetcher Tab -->
+  <div class="tab-pane fade show active" id="caseTab" role="tabpanel">
+    <div class="card shadow p-4">
+      <h4 class="mb-3">High Court Scraper</h4>
+      <!-- High Court Scraper Form -->
+      <form id="highCourtForm" method="POST">
+        {% csrf_token %}
 
-    <!-- High Court -->
-    <div class="mb-3">
-      <label class="form-label">Select High Court</label>
-      <select id="highCourt" name="highCourt" class="form-select" disabled required>
-        <option value="">-- Select High Court --</option>
-      </select>
+        <!-- High Court -->
+        <div class="mb-3">
+          <label class="form-label">Select High Court</label>
+          <select id="highCourt" name="highCourt" class="form-select" disabled required>
+            <option value="">-- Select High Court --</option>
+          </select>
+        </div>
+
+        <!-- Bench -->
+        <div class="mb-3">
+          <label class="form-label">Select Bench</label>
+          <select id="bench" name="bench" class="form-select" disabled required>
+            <option value="">-- Select Bench --</option>
+          </select>
+        </div>
+
+        <!-- Case Type -->
+        <div class="mb-3">
+          <label class="form-label">Select Case Type</label>
+          <select id="caseType" name="caseType" class="form-select" disabled required>
+            <option value="">-- Select Case Type --</option>
+          </select>
+        </div>
+
+        <!-- Case Number -->
+        <div class="mb-3">
+          <label class="form-label">Case Number</label>
+          <input type="number" id="caseNumber" name="caseNumber" class="form-control" required maxlength="7">
+        </div>
+
+        <!-- Year -->
+        <div class="mb-3">
+          <label class="form-label">Year</label>
+          <input type="number" id="year" name="year" class="form-control" required maxlength="4">
+        </div>
+
+        <!-- Captcha -->
+        <div class="mb-3">
+          <label class="form-label">Captcha</label>
+          <div class="d-flex align-items-center">
+            <img id="caseCaptchaImage" src="" alt="Captcha" class="me-3 border rounded" style="height:50px;">
+            <button type="button" class="btn btn-outline-secondary btn-sm" id="refreshCaseCaptcha">Refresh</button>
+          </div>
+          <input type="text" id="caseCaptchaText" name="caseCaptchaText" class="form-control mt-2" placeholder="Enter captcha" required minlength="6" , maxlength="6">
+        </div>
+
+        <!-- Submit -->
+        <div class="d-grid">
+          <button type="submit" class="btn btn-primary">Fetch</button>
+        </div>
+      </form>
     </div>
+  </div>
 
-    <!-- Bench -->
-    <div class="mb-3">
-      <label class="form-label">Select Bench</label>
-      <select id="bench" name="bench" class="form-select" disabled required>
-        <option value="">-- Select Bench --</option>
-      </select>
-    </div>
+  <!-- Cause List Tab -->
+  <div class="tab-pane fade" id="causeTab" role="tabpanel">
+    <div class="card shadow p-4">
+      <h4 class="mb-3">Cause List Downloader</h4>
+      <form id="causeListForm" method="POST">
+        {% csrf_token %}
+        <!-- High Court Selection -->
+        <div class="mb-3">
+          <label class="form-label">Select High Court</label>
+          <select id="causeHighCourt" name="highCourt" class="form-select" required>
+            <option value="">-- Select High Court --</option>
+          </select>
+        </div>
+        <!-- Bench Selection -->
+        <div class="mb-3">
+          <label class="form-label">Select Bench</label>
+          <select id="causeBench" name="bench" class="form-select" required>
+            <option value="">-- Select Bench --</option>
+          </select>
+        </div>
+        <!-- Date -->
+        <div class="mb-3">
+          <label class="form-label">Select Date</label>
+          <input type="date" id="causeDate" name="date" class="form-control" required>
+        </div>
 
-    <!-- Case Type -->
-    <div class="mb-3">
-      <label class="form-label">Select Case Type</label>
-      <select id="caseType" name="caseType" class="form-select" disabled required>
-        <option value="">-- Select Case Type --</option>
-      </select>
-    </div>
+        <!-- Captcha -->
+        <div class="mb-3">
+          <label class="form-label">Captcha</label>
+          <div class="d-flex align-items-center">
+            <img id="causeCaptchaImage" src="" alt="Captcha" class="me-3 border rounded" style="height:50px;">
+            <button type="button" class="btn btn-outline-secondary btn-sm" id="refreshCauseCaptcha">Refresh</button>
+          </div>
+          <input type="text" id="causeCaptchaText" name="causeCaptchaText" class="form-control mt-2" placeholder="Enter captcha" required minlength="6" maxlength="6">
+        </div>
 
-    <!-- Case Number -->
-    <div class="mb-3">
-      <label class="form-label">Case Number</label>
-      <input type="number" id="caseNumber" name="caseNumber" class="form-control" required>
-    </div>
 
-    <!-- Year -->
-    <div class="mb-3">
-      <label class="form-label">Year</label>
-      <input type="number" id="year" name="year" class="form-control" required>
+        <div class="d-grid">
+          <button type="submit" class="btn btn-primary">Download Cause List</button>
+        </div>
+      </form>
     </div>
-
-    <!-- Captcha -->
-    <div class="mb-3">
-      <label class="form-label">Captcha</label>
-      <div class="d-flex align-items-center">
-        <img id="captchaImage" src="" alt="Captcha" class="me-3 border rounded" style="height:50px;">
-        <button type="button" class="btn btn-outline-secondary btn-sm" id="refreshCaptcha">Refresh</button>
-      </div>
-      <input type="text" id="captchaText" name="captchaText" class="form-control mt-2" placeholder="Enter captcha" required>
-    </div>
-
-    <!-- Submit -->
-    <div class="d-grid">
-      <button type="submit" class="btn btn-primary">Fetch</button>
-    </div>
-  </form>
+  </div>
 </div>
+
+<!-- Results Container -->
+<div id="results" class="mt-4" style="display:none;"></div>
 
 <!-- Loading Spinner -->
 <div id="loadingSpinner" class="text-center my-4" style="display:none;">
   <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;">
     <span class="visually-hidden">Loading...</span>
   </div>
-  <p class="mt-2 text-primary fw-bold">Fetching case details...</p>
+  <p class="mt-2 text-primary fw-bold">Fetching data...</p>
 </div>
 
-
-<!-- Results -->
-<div id="results" class="mt-4" style="display:none;"></div>
-
-<!-- jQuery -->
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-
-<script>
+{% comment %} <script>
 $(document).ready(function() {
-  // 1. Load High Courts
-  $("#highCourt").prop("disabled", true).html('<option>Loading...</option>');
-  $.getJSON("/api/highcourts/", function(data) {
-    $("#highCourt").prop("disabled", false).html('<option value="">-- Select High Court --</option>');
-    $("#highCourt").append(data.map(item => `<option value="${item.id}">${item.name}</option>`));
+
+  let caseFormLoaded = false;
+  let causeFormLoaded = false;
+
+  function initCaseTab() {
+        if (caseFormLoaded) return;
+        caseFormLoaded = true;
+        $("#highCourt").prop("disabled", true).html('<option>Loading...</option>');
+        // Load High Courts for Case Details form
+        $.getJSON("/api/highcourts/", function(data) {
+          let $select = $("#highCourt");
+          $select.prop("disabled", false).html('<option value="">-- Select High Court --</option>');
+          data.forEach(item => $select.append(`<option value="${item.id}">${item.name}</option>`));
+        });
+
+        // Load Benches dynamically
+        $("#highCourt").change(function() {
+          let courtId = $(this).val();
+          $("#bench").prop("disabled", true).html('<option>Loading...</option>');
+          $.getJSON(`/api/benches/${courtId}/`, function(data) {
+            $("#bench").prop("disabled", false).html('<option value="">-- Select Bench --</option>');
+            data.forEach(item => $("#bench").append(`<option value="${item.id}">${item.name}</option>`));
+          });
+        });
+
+        // Load Case Types dynamically
+        $("#bench").change(function() {
+          let benchId = $(this).val();
+          $("#caseType").prop("disabled", true).html('<option>Loading...</option>');
+          $.getJSON(`/api/casetypes/${benchId}/`, function(data) {
+            $("#caseType").prop("disabled", false).html('<option value="">-- Select Case Type --</option>');
+            data.forEach(item => $("#caseType").append(`<option value="${item.id}">${item.name}</option>`));
+          });
+          loadCaseCaptcha();
+        });
+
+        function loadCaseCaptcha() {
+          $.getJSON("/api/highcourt/case/captcha", function(data) {
+            $("#caseCaptchaImage").attr("src", "data:image/png;base64," + data.image_base64);
+          });
+        }
+
+        $("#refreshCaseCaptcha").click(loadCaseCaptcha);
+    }
+
+    function initCauseTab() {
+      if (causeFormLoaded) return;
+      loadDateInput();
+      causeFormLoaded = true;
+      $("#causeHighCourt").prop("disabled", true).html('<option>Loading...</option>');
+      // Load High Courts for Cause List form
+      $.getJSON("/api/highcourts/causelist/", function(data) {
+        let $select = $("#causeHighCourt");
+        $select.prop("disabled", false).html('<option value="">-- Select High Court --</option>');
+        data.forEach(item => $select.append(`<option value="${item.id}">${item.name}</option>`));
+      });
+
+      // Load Benches dynamically
+      $("#causeHighCourt").change(function() {
+        let courtId = $(this).val();
+        $("#causeBench").prop("disabled", true).html('<option>Loading...</option>');
+        $.getJSON(`/api/benches/causelist/${courtId}/`, function(data) {
+          $("#causeBench").prop("disabled", false).html('<option value="">-- Select Bench --</option>');
+          data.forEach(item => $("#causeBench").append(`<option value="${item.id}">${item.name}</option>`));
+        });
+      });
+
+      // Load Case Types dynamically
+      $("#causeBench").change(function() {
+        let benchId = $(this).val();
+        $.getJSON(`/api/select-bench/${benchId}/`, function(data) {
+          // none
+        });
+        loadCauseCaptcha();
+      });
+
+      function loadCauseCaptcha() {
+        $.getJSON("/api/highcourt/cause/captcha/", function(data) {
+          $("#causeCaptchaImage").attr("src", "data:image/png;base64," + data.image_base64);
+        });
+      }
+
+      $("#refreshCauseCaptcha").click(loadCauseCaptcha);
+
+      function loadDateInput() {
+        const today = new Date();
+        const tomorrow = new Date();
+        tomorrow.setDate(today.getDate() + 1);
+
+        const dateInput = document.getElementById("causeDate");
+        dateInput.min = formatDate(today);
+        dateInput.max = formatDate(tomorrow);
+        dateInput.value = formatDate(today);
+      }
+
+      function formatDate(d) {
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        return `${day}-${month}-${d.getFullYear()}`;
+      }
+    }
+
+    // Initialize the active tab manually
+    if ($('#caseTab').hasClass('show active')) {
+        initCaseTab();
+    }
+
+  // Tab switch event
+  $('button[data-bs-toggle="tab"]').on('shown.bs.tab', function(e) {
+      const target = $(e.target).data('bs-target');
+      if (target === '#caseTab') initCaseTab();
+      else if (target === '#causeTab') initCauseTab(); // similar function for Cause List
   });
 
-  // 2. Load Benches on High Court selection
-  $("#highCourt").change(function() {
-    let courtId = $(this).val();
-    $("#bench").prop("disabled", true).html('<option>Loading...</option>');
-    $.getJSON(`/api/benches/${courtId}/`, function(data) {
-      $("#bench").prop("disabled", false).html('<option value="">-- Select Bench --</option>');
-      data.forEach(item => $("#bench").append(`<option value="${item.id}">${item.name}</option>`));
-    });
-  });
-
-  // 3. Load Case Types on Bench selection
-  $("#bench").change(function() {
-    let benchId = $(this).val();
-    $("#caseType").prop("disabled", true).html('<option>Loading...</option>');
-    $.getJSON(`/api/casetypes/${benchId}/`, function(data) {
-      $("#caseType").prop("disabled", false).html('<option value="">-- Select Case Type --</option>');
-      data.forEach(item => $("#caseType").append(`<option value="${item.id}">${item.name}</option>`));
-    });
-    loadCaptcha();
-  });
-
-  // 4. Captcha loader
-  function loadCaptcha() {
-    $.getJSON("/api/captcha/", function(data) {
-      $("#captchaImage").attr("src", "data:image/png;base64," + data.image_base64);
-    });
-  }
-  
-
-  $("#refreshCaptcha").click(loadCaptcha);
-
-  // 5. Submit Form via AJAX
+  // Form submissions (AJAX) remain the same
   $("#highCourtForm").submit(function(e) {
     e.preventDefault();
 
@@ -131,8 +261,8 @@ $(document).ready(function() {
       caseTypeText: $("#caseType option:selected").text(),
       caseNumber: $("#caseNumber").val(),
       year: $("#year").val(),
-      captchaText: $("#captchaText").val(),
-      captchaToken: $("#captchaImage").data("token"),
+      captchaText: $("#caseCaptchaText").val(),
+      captchaToken: $("#caseCaptchaImage").data("token"),
       csrfmiddlewaretoken: $("input[name=csrfmiddlewaretoken]").val()
     };
 
@@ -270,7 +400,450 @@ $(document).ready(function() {
       }
     });
   });
+
+  $("#causeListForm").submit(function(e) {
+    e.preventDefault();
+    $("#loadingSpinner").show();
+    $("#results").hide().empty();
+
+    const formData = {
+      highCourt: $("#causeHighCourt").val(),
+      bench: $("#causeBench").val(),
+      date: $("#causeDate").val(),
+      csrfmiddlewaretoken: $("input[name=csrfmiddlewaretoken]").val()
+    };
+
+    $.ajax({
+      url: "/api/fetch-causelist/",
+      method: "POST",
+      data: formData,
+      success: function(response) {
+        $("#loadingSpinner").hide();
+        $("#results").show().html(renderCauseList(response));
+      },
+      error: function(xhr) {
+        $("#loadingSpinner").hide();
+        $("#results").show().html(`<div class="alert alert-danger">Error: ${xhr.responseText}</div>`);
+      }
+    });
+  });
+
+  // Helper rendering functions (you can reuse your existing code)
+  function renderCaseDetails(response) {
+    // build HTML for case details
+    return "<pre>" + JSON.stringify(response, null, 2) + "</pre>";
+  }
+
+  function renderCauseList(response) {
+    if (response.pdf_url) {
+      return `<div class="alert alert-success">
+                Cause List ready. <a href="${response.pdf_url}" target="_blank" class="btn btn-sm btn-success">Download PDF</a>
+              </div>`;
+    } else {
+      return `<div class="alert alert-warning">No cause list available for selected date.</div>`;
+    }
+  }
+
+});
+
+</script> {% endcomment %}
+
+<script>
+$(document).ready(function() {
+
+  let caseFormLoaded = false;
+  let causeFormLoaded = false;
+
+  // ---------- Case Tab Initialization ----------
+  function initCaseTab() {
+    $("#results").hide().empty();
+
+    const currentYear = new Date().getFullYear();
+    $("#year").attr("min", 1901);
+    $("#year").attr("max", currentYear);
+
+    if (caseFormLoaded) return;
+    caseFormLoaded = true;
+
+    // Hide spinner
+    $("#loadingSpinner").hide();
+
+    // Hide form card
+    $(".card.shadow.p-4").show();
+
+    // Load High Courts
+    const $highCourt = $("#highCourt");
+    $highCourt.prop("disabled", true).html('<option>Loading...</option>');
+    $.getJSON("/api/highcourts/", function(data) {
+      $highCourt.prop("disabled", false).html('<option value="">-- Select High Court --</option>');
+      data.forEach(item => $highCourt.append(`<option value="${item.id}">${item.name}</option>`));
+    });
+
+    // Load Benches dynamically
+    $("#highCourt").change(function() {
+      let courtId = $(this).val();
+      const $bench = $("#bench");
+      $bench.prop("disabled", true).html('<option>Loading...</option>');
+      $.getJSON(`/api/benches/${courtId}/`, function(data) {
+        $bench.prop("disabled", false).html('<option value="">-- Select Bench --</option>');
+        data.forEach(item => $bench.append(`<option value="${item.id}">${item.name}</option>`));
+      });
+    });
+
+    // Load Case Types dynamically
+    $("#bench").change(function() {
+      let benchId = $(this).val();
+      const $caseType = $("#caseType");
+      $caseType.prop("disabled", true).html('<option>Loading...</option>');
+      $.getJSON(`/api/casetypes/${benchId}/`, function(data) {
+        $caseType.prop("disabled", false).html('<option value="">-- Select Case Type --</option>');
+        data.forEach(item => $caseType.append(`<option value="${item.id}">${item.name}</option>`));
+      });
+      loadCaseCaptcha();
+    });
+
+    // Captcha
+    function loadCaseCaptcha() {
+      $.getJSON("/api/highcourt/case/captcha", function(data) {
+        $("#caseCaptchaImage").attr("src", "data:image/png;base64," + data.image_base64);
+      });
+    }
+    $("#refreshCaseCaptcha").click(loadCaseCaptcha);
+  }
+
+  // ---------- Cause List Tab Initialization ----------
+  function initCauseTab() {
+    $("#results").hide().empty();
+
+    if (causeFormLoaded) return;
+    causeFormLoaded = true;
+
+    // Hide spinner
+    $("#loadingSpinner").hide();
+
+    // Hide form card
+    $(".card.shadow.p-4").show();
+
+    // Load High Courts
+    const $highCourt = $("#causeHighCourt");
+    $highCourt.prop("disabled", true).html('<option>Loading...</option>');
+    $.getJSON("/api/highcourts/causelist/", function(data) {
+      $highCourt.prop("disabled", false).html('<option value="">-- Select High Court --</option>');
+      data.forEach(item => $highCourt.append(`<option value="${item.id}">${item.name}</option>`));
+    });
+
+    // Load Benches dynamically
+    $("#causeHighCourt").change(function() {
+      let courtId = $(this).val();
+      const $bench = $("#causeBench");
+      $bench.prop("disabled", true).html('<option>Loading...</option>');
+      $.getJSON(`/api/benches/causelist/${courtId}/`, function(data) {
+        $bench.prop("disabled", false).html('<option value="">-- Select Bench --</option>');
+        data.forEach(item => $bench.append(`<option value="${item.id}">${item.name}</option>`));
+      });
+    });
+
+    $("#causeBench").change(function() {
+      let benchId = $(this).val();
+      $.getJSON(`/api/select-bench/${benchId}/`, function(data) {
+        // none
+      });
+      loadCauseCaptcha();
+    });
+
+    // Load captcha
+    function loadCauseCaptcha() {
+      $.getJSON("/api/highcourt/cause/captcha/", function(data) {
+        $("#causeCaptchaImage").attr("src", "data:image/png;base64," + data.image_base64);
+      });
+    }
+    $("#refreshCauseCaptcha").click(loadCauseCaptcha);
+
+    // Date input: today and tomorrow only
+    const today = new Date();
+    const tomorrow = new Date();
+    tomorrow.setDate(today.getDate() + 1);
+
+    const $dateInput = $("#causeDate");
+    $dateInput.attr("min", formatDate(today));
+    $dateInput.attr("max", formatDate(tomorrow));
+    $dateInput.val(formatDate(today));
+
+    function formatDate(d) {
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${d.getFullYear()}-${month}-${day}`;
+    }
+  }
+
+  // ---------- Tab switch handling ----------
+  $('button[data-bs-toggle="tab"]').on('shown.bs.tab', function(e) {
+    const target = $(e.target).data('bs-target');
+    if (target === '#caseTab') initCaseTab();
+    else if (target === '#causeTab') initCauseTab();
+  });
+
+  // Initialize the active tab on page load
+  if ($('#caseTab').hasClass('show active')) initCaseTab();
+  if ($('#causeTab').hasClass('show active')) initCauseTab();
+
+  // ---------- Form Submissions ----------
+  $("#highCourtForm").submit(function(e) {
+    e.preventDefault();
+    fetchCaseDetails();
+  });
+
+  $("#causeListForm").submit(function(e) {
+    e.preventDefault();
+    fetchCauseList();
+  });
+
+  // ---------- AJAX calls ----------
+  function fetchCaseDetails() {
+    $("#loadingSpinner").show();
+    $("#results").hide().empty();
+
+    const formData = {
+      highCourt: $("#highCourt").val(),
+      bench: $("#bench").val(),
+      caseType: $("#caseType").val(),
+      caseTypeText: $("#caseType option:selected").text(),
+      caseNumber: $("#caseNumber").val(),
+      year: $("#year").val(),
+      captchaText: $("#caseCaptchaText").val(),
+      csrfmiddlewaretoken: $("input[name=csrfmiddlewaretoken]").val()
+    };
+
+    $.ajax({
+      url: "/api/fetch-case/",
+      method: "POST",
+      contentType: "application/json",
+      data: JSON.stringify(formData),
+      success: function(response) {
+        $("#loadingSpinner").hide();
+
+        if(response.success == false) {
+          alert(response.result);
+          $.getJSON("/api/highcourt/case/captcha", function(data) {
+            $("#caseCaptchaImage").attr("src", "data:image/png;base64," + data.image_base64);
+          });
+          return;
+        }
+
+        $("#results").show().html(renderCaseDetails(response));
+      },
+      error: function(xhr) {
+        $("#loadingSpinner").hide();
+        $("#results").show().html(`<div class="alert alert-danger">Error: ${xhr.responseText}</div>`);
+      }
+    });
+  }
+
+  function fetchCauseList() {
+    $("#loadingSpinner").show();
+    $("#results").hide().empty();
+
+    const formData = {
+      highCourt: $("#causeHighCourt").val(),
+      causeBench: $("#causeBench").val(),
+      causeDate: $("#causeDate").val(),
+      causeCaptchaText: $("#causeCaptchaText").val(),
+      csrfmiddlewaretoken: $("input[name=csrfmiddlewaretoken]").val()
+    };
+
+    $.ajax({
+      url: "/api/fetch-causelist/",
+      method: "POST",
+      contentType: "application/json",
+      data: JSON.stringify(formData),
+      success: function(response) {
+        $("#loadingSpinner").hide();
+        if(response.success == false) {
+          alert(response.result);
+          $.getJSON("/api/highcourt/cause/captcha/", function(data) {
+            $("#causeCaptchaImage").attr("src", "data:image/png;base64," + data.image_base64);
+          });
+          return;
+        }
+        $("#results").show().html(renderCauseList(response));
+      },
+      error: function(xhr) {
+        $("#loadingSpinner").hide();
+        $("#results").show().html(`<div class="alert alert-danger">Error: ${xhr.responseText}</div>`);
+      }
+    });
+  }
+
+  // ---------- Rendering helpers ----------
+  function renderCaseDetails(response) {
+    // reuse your previous code to build tables for case details
+    // return "<pre>" + JSON.stringify(response, null, 2) + "</pre>";
+
+    // Clear results
+    let container = $("#results");
+    container.show().empty();
+
+    // Helper function to create a table from JSON object
+    function createTable(title, obj) {
+        let html = `<div class="card shadow mb-3">
+                    <div class="card-header bg-primary text-white">${title}</div>
+                    <div class="card-body">
+                        <table class="table table-striped table-bordered mb-0">`;
+        for (let key in obj) {
+        html += `<tr><th>${key}</th><td>${obj[key] || '-'}</td></tr>`;
+        }
+        html += `</table></div></div>`;
+        return html;
+    }
+
+    
+    caseInfoTtile = `
+        <div class="mt-5">
+            <h3 class="text-center fw-bold text-primary">📜 Case Information</h3>
+            <hr class="my-3">
+        </div>
+    `;
+    container.append(caseInfoTtile);
+
+    // Case Details
+    container.append(createTable("Case Details", response.case_details));
+
+    // Case Status
+    container.append(createTable("Case Status", response.case_status));
+
+    // Petitioner & Respondent
+    container.append(`<div class="card shadow mb-3">
+                        <div class="card-header bg-info text-white">Petitioner</div>
+                        <div class="card-body">${response.petitioner}</div>
+                        </div>`);
+
+    container.append(`<div class="card shadow mb-3">
+                        <div class="card-header bg-info text-white">Respondent</div>
+                        <div class="card-body">${response.respondent}</div>
+                        </div>`);
+
+    // Category Details
+    container.append(createTable("Category Details", response.category_details));
+
+    // IA Details
+    if (response.ia_details && response.ia_details.length) {
+        let iaHtml = `<div class="card shadow mb-3">
+                        <div class="card-header bg-warning text-dark">IA Details</div>
+                        <div class="card-body">
+                        <table class="table table-striped table-bordered mb-0">
+                            <thead><tr>`;
+        for (let key in response.ia_details[0]) {
+        iaHtml += `<th>${key}</th>`;
+        }
+        iaHtml += `</tr></thead><tbody>`;
+        response.ia_details.forEach(row => {
+        iaHtml += `<tr>`;
+        for (let key in row) iaHtml += `<td>${row[key] || '-'}</td>`;
+        iaHtml += `</tr>`;
+        });
+        iaHtml += `</tbody></table></div></div>`;
+        container.append(iaHtml);
+    }
+
+    // Case History
+    if (response.case_history && response.case_history.length) {
+        let historyHtml = `<div class="card shadow mb-3">
+                            <div class="card-header bg-success text-white">Case History</div>
+                            <div class="card-body">
+                            <table class="table table-striped table-bordered mb-0">
+                                <thead><tr>`;
+        for (let key in response.case_history[0]) historyHtml += `<th>${key}</th>`;
+        historyHtml += `</tr></thead><tbody>`;
+        response.case_history.forEach(row => {
+        historyHtml += `<tr>`;
+        for (let key in row) historyHtml += `<td>${row[key] || '-'}</td>`;
+        historyHtml += `</tr>`;
+        });
+        historyHtml += `</tbody></table></div></div>`;
+        container.append(historyHtml);
+    }
+
+    // Orders
+    if (response.orders && response.orders.length) {
+        let ordersHtml = `<div class="card shadow mb-3">
+                            <div class="card-header bg-secondary text-white">Orders</div>
+                            <div class="card-body">
+                            <table class="table table-striped table-bordered mb-0">
+                                <thead><tr>`;
+        for (let key in response.orders[0]) ordersHtml += `<th>${key}</th>`;
+        ordersHtml += `</tr></thead><tbody>`;
+        response.orders.forEach(row => {
+        ordersHtml += `<tr>`;
+        for (let key in row) {
+            if (key === "PDF URL") {
+            ordersHtml += `<td><a href="${row[key]}" target="_blank" class="btn btn-sm btn-success">View PDF</a></td>`;
+            } else {
+            ordersHtml += `<td>${row[key] || '-'}</td>`;
+            }
+        }
+        ordersHtml += `</tr>`;
+        });
+        ordersHtml += `</tbody></table></div></div>`;
+        container.append(ordersHtml);
+    }
+
+    // Add New Search button
+    container.append(`
+        <div class="text-center mt-4">
+            <button class="btn btn-outline-primary" onclick="location.reload()">🔄 New Search</button>
+        </div>
+    `);
+  }
+
+  function renderCauseList(response) {
+      // Clear results
+      let container = $("#results");
+      container.show().empty();
+
+      if (!response || response.length === 0) {
+          container.append("<p>No causelist found.</p>");
+          return;
+      }
+
+      // Create table
+      let table = $("<table>").addClass("table table-striped table-bordered");
+      
+      // Create header row
+      let thead = $("<thead>");
+      let headerRow = $("<tr>");
+      Object.keys(response[0]).forEach(key => {
+          headerRow.append($("<th>").text(key));
+      });
+      thead.append(headerRow);
+      table.append(thead);
+
+      // Create body
+      let tbody = $("<tbody>");
+      response.forEach(row => {
+          let tr = $("<tr>");
+          Object.keys(row).forEach(key => {
+              let td = $("<td>");
+              let value = row[key];
+              
+              // If value is an object with href (link), render as anchor
+              if (value && typeof value === "object" && value.href) {
+                  td.append($("<a>").attr("href", value.href).attr("target", "_blank").text(value.text));
+              } else {
+                  td.text(value);
+              }
+
+              tr.append(td);
+          });
+          tbody.append(tr);
+      });
+      table.append(tbody);
+
+      container.append(table);
+  }
+
+
 });
 </script>
+
 
 {% endblock %}
