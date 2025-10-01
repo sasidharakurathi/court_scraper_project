@@ -11,6 +11,7 @@ venv/
 # Django
 /media/
 staticfiles/
+static/
 
 # Logs
 *.log
