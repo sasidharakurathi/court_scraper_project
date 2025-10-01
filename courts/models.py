@@ -81,3 +81,63 @@ class IADetail(models.Model):
 
     def __str__(self):
         return f"{self.ia_number} for {self.case.cnr_number}"
+
+# ============================================== CAUSE LISTS MODELS ===========================================
+
+
+class CauseListEntry(models.Model):
+    serial_number = models.CharField(max_length=10)
+    bench = models.TextField()
+    cause_list_type = models.CharField(max_length=100)
+    view_text = models.CharField(max_length=50, default="View")
+    view_href = models.URLField(max_length=500)
+    
+    # It's highly recommended to add a date field to know when this cause list is for
+    list_date = models.DateField(help_text="The date of the cause list")
+
+    def __str__(self):
+        return f"{self.list_date} - Sr. {self.serial_number} ({self.cause_list_type})"
+
+    class Meta:
+        verbose_name_plural = "Cause List Entries"
+        ordering = ['-list_date', 'serial_number']
+        
+# ============================================ ALL QUERY LOGS ================================================   
+class QueryLog(models.Model):
+    # Status choices (no change)
+    STATUS_CHOICES = [
+        ('Success', 'Success'),
+        ('Failed', 'Failed'),
+    ]
+
+    # NEW: Choices for the different query types
+    QUERY_TYPE_CHOICES = [
+        ('HC_CASE_DETAILS', 'High Court - Case Details'),
+        ('HC_CAUSE_LIST', 'High Court - Cause List'),
+        ('DC_CASE_DETAILS', 'District Court - Case Details'),
+        ('DC_CAUSE_LIST', 'District Court - Cause List'),
+    ]
+
+    # --- Type of Query ---
+    query_type = models.CharField(max_length=20, choices=QUERY_TYPE_CHOICES)
+
+    # --- Input Fields (now optional) ---
+    state = models.CharField(max_length=100, blank=True, null=True)
+    district = models.CharField(max_length=100, blank=True, null=True)
+    case_number = models.CharField(max_length=100, blank=True, null=True) # Now allows empty values
+
+    # --- Tracking and Status (no change) ---
+    requested_at = models.DateTimeField(auto_now_add=True)
+    status = models.CharField(max_length=10, choices=STATUS_CHOICES)
+    
+    # --- Response Data (no change) ---
+    error_message = models.TextField(blank=True, null=True)
+    raw_json_response = models.JSONField(blank=True, null=True)
+
+    def __str__(self):
+        return f"{self.get_query_type_display()} - {self.status} on {self.requested_at.strftime('%Y-%m-%d')}"
+
+    class Meta:
+        ordering = ['-requested_at']
+        verbose_name = "Query Log"
+        verbose_name_plural = "Query Logs"

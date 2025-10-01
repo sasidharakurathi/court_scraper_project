@@ -1,32 +1,193 @@
 {% extends "base.html" %}
-{% block content %}
-<div class="card shadow p-4">
-  <h4 class="mb-3">Query Logs & Statistics</h4>
-  <p><strong>Total Queries:</strong> {{ stats.total_queries }}</p>
-  <p><strong>Cases Found:</strong> {{ stats.cases_found }}</p>
 
-  <h5 class="mt-4">Recent Queries</h5>
-  <table class="table table-striped">
-    <thead>
-      <tr>
-        <th>Case Type</th>
-        <th>Case Number</th>
-        <th>Year</th>
-        <th>Requested At</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for log in logs %}
-      <tr>
-        <td>{{ log.case_type }}</td>
-        <td>{{ log.case_number }}</td>
-        <td>{{ log.year }}</td>
-        <td>{{ log.requested_at }}</td>
-      </tr>
-      {% empty %}
-      <tr><td colspan="4">No queries yet.</td></tr>
-      {% endfor %}
-    </tbody>
-  </table>
+{% block content %}
+<div class="container-fluid mt-4">
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h3 class="h3 mb-0 text-gray-800">Query Logs & Statistics</h3>
+        <a href="{% url 'home' %}" class="btn btn-success btn-sm">← Back to Scraper</a>
+    </div>
+    <div class="row">
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-primary shadow h-100 py-2"><div class="card-body"><div class="row no-gutters align-items-center"><div class="col mr-2"><div class="text-xs font-weight-bold text-primary text-uppercase mb-1">Total Queries</div><div class="h5 mb-0 font-weight-bold text-gray-800">{{ stats.total }}</div></div></div></div></div>
+        </div>
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-success shadow h-100 py-2"><div class="card-body"><div class="row no-gutters align-items-center"><div class="col mr-2"><div class="text-xs font-weight-bold text-success text-uppercase mb-1">Successful</div><div class="h5 mb-0 font-weight-bold text-gray-800">{{ stats.successful }}</div></div></div></div></div>
+        </div>
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-danger shadow h-100 py-2"><div class="card-body"><div class="row no-gutters align-items-center"><div class="col mr-2"><div class="text-xs font-weight-bold text-danger text-uppercase mb-1">Failed</div><div class="h5 mb-0 font-weight-bold text-gray-800">{{ stats.failed }}</div></div></div></div></div>
+        </div>
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-warning shadow h-100 py-2"><div class="card-body"><div class="row no-gutters align-items-center"><div class="col mr-2"><div class="text-xs font-weight-bold text-warning text-uppercase mb-1">Success Rate</div><div class="h5 mb-0 font-weight-bold text-gray-800">{{ stats.success_rate }}%</div></div></div></div></div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-12 mb-4">
+            <div class="card shadow">
+                <div class="card-header py-3"><h6 class="m-0 font-weight-bold text-primary">Most Searched States</h6></div>
+                <div class="card-body">
+                    <ol>
+                        {% for item in top_states %}
+                            <li class="d-flex justify-content-between">
+                                <span>{{ item.state|default:"N/A" }}</span>
+                                <span>{{ item.query_count }} quer{{ item.query_count|pluralize:"y,ies" }}</span>
+                            </li>
+                        {% empty %}
+                            <li>No queries yet.</li>
+                        {% endfor %}
+                    </ol>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-12 mb-4">
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Statistics by Query Type</h6>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-bordered">
+                            <thead>
+                                <tr>
+                                    <th>Query Type</th>
+                                    <th>Total</th>
+                                    <th>Successful</th>
+                                    <th>Failed</th>
+                                    <th>Success Rate</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for type_stat in stats_by_type %}
+                                <tr>
+                                    <td>{{ type_stat.display_name }}</td>
+                                    <td>{{ type_stat.total }}</td>
+                                    <td>{{ type_stat.successful }}</td>
+                                    <td>{{ type_stat.failed }}</td>
+                                    <td>{{ type_stat.success_rate|floatformat:1 }}%</td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="5" class="text-center">No queries to analyze yet.</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-12 mb-4">
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Recent Query Logs</h6>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-bordered" id="dataTable" width="100%" cellspacing="0">
+                            <thead>
+                                <tr>
+                                    <th>Time</th>
+                                    <th>Query Type</th>
+                                    <th>State</th>
+                                    <th>District</th>
+                                    <th>Status</th>
+                                    <th>Raw JSON</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for log in logs %}
+                                <tr>
+                                    <td>{{ log.requested_at|date:"n/j/Y, P" }}</td>
+                                    <td>{{ log.get_query_type_display }}</td>
+                                    <td>{{ log.state|default:"-" }}</td>
+                                    <td>{{ log.district|default:"-" }}</td>
+                                    <td>
+                                        {% if log.status == 'Success' %}
+                                            <span class="badge bg-success">Success</span>
+                                        {% else %}
+                                            <span class="badge bg-danger">Failed</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if log.raw_json_response %}
+                                            <button class="btn btn-link btn-sm view-json-btn" 
+                                                    data-bs-toggle="modal" 
+                                                    data-bs-target="#jsonModal"
+                                                    data-log-id="{{ log.id }}">
+                                                View JSON
+                                            </button>
+                                            <script type="application/json" id="json-data-{{ log.id }}">
+                                                {{ log.raw_json_response|safe }}
+                                            </script>
+                                        {% else %}
+                                            -
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="6" class="text-center">No queries logged yet.</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="jsonModal" tabindex="-1" aria-labelledby="jsonModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="jsonModalLabel">Raw JSON Response</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" style="max-height: 80vh; overflow-y: auto; overflow-x: auto;">
+                <pre><code id="json-content" class="language-json" style="white-space:pre-wrap;"></code></pre>
+            </div>
+
+        </div>
+    </div>
 </div>
 {% endblock %}
+
+{% block scripts %}
+<script>
+$(function() {
+    $('#jsonModal').on('show.bs.modal', function (event) {
+        var button = $(event.relatedTarget);
+        var logId = button.data('log-id');
+        var scriptTag = document.getElementById("json-data-" + logId);
+
+        // Get the <code> element inside the modal
+        var codeElement = document.getElementById('json-content');
+
+        if (scriptTag) {
+            var rawJsonString = scriptTag.textContent;
+            try {
+                // Prettify the JSON with 2-space indentation
+                var obj = JSON.parse(rawJsonString);
+                var prettyJson = JSON.stringify(obj, null, 2);
+
+                // Set the text content of the <code> element
+                codeElement.textContent = prettyJson;
+
+                // ADD THIS LINE: Tell Prism to highlight the element
+                Prism.highlightElement(codeElement);
+
+            } catch (e) {
+                codeElement.textContent = rawJsonString; // Show raw string on error
+            }
+        } else {
+            codeElement.textContent = "No JSON available.";
+        }
+    });
+});
+</script>
+{% endblock scripts %}

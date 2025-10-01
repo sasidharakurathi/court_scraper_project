@@ -796,50 +796,66 @@ $(document).ready(function() {
   }
 
   function renderCauseList(response) {
-      // Clear results
-      let container = $("#results");
-      container.show().empty();
+    // Clear results
+    let container = $("#results");
+    container.show().empty();
 
-      if (!response || response.length === 0) {
-          container.append("<p>No causelist found.</p>");
-          return;
-      }
+    causeListInfoTtile = `
+        <div class="mt-5">
+            <h3 class="text-center fw-bold text-primary">📜 Cause List Information</h3>
+            <hr class="my-3">
+        </div>
+    `;
+    container.append(causeListInfoTtile);
 
-      // Create table
-      let table = $("<table>").addClass("table table-striped table-bordered");
-      
-      // Create header row
-      let thead = $("<thead>");
-      let headerRow = $("<tr>");
-      Object.keys(response[0]).forEach(key => {
-          headerRow.append($("<th>").text(key));
-      });
-      thead.append(headerRow);
-      table.append(thead);
+    if (!response || response.length === 0) {
+        container.append("<p>No causelist found.</p>");
+        return;
+    }
 
-      // Create body
-      let tbody = $("<tbody>");
-      response.forEach(row => {
-          let tr = $("<tr>");
-          Object.keys(row).forEach(key => {
-              let td = $("<td>");
-              let value = row[key];
-              
-              // If value is an object with href (link), render as anchor
-              if (value && typeof value === "object" && value.href) {
-                  td.append($("<a>").attr("href", value.href).attr("target", "_blank").text(value.text));
-              } else {
-                  td.text(value);
-              }
+    // 1. Create a wrapper div to handle the scrolling
+    let tableWrapper = $("<div>").css({
+        "max-height": "600px",  // Sets a max height for ~15 rows
+        "overflow-y": "auto"   // Adds a vertical scrollbar only when needed
+    });
 
-              tr.append(td);
-          });
-          tbody.append(tr);
-      });
-      table.append(tbody);
+    // 2. Create the table as before
+    let table = $("<table>").addClass("table table-striped table-bordered");
+    
+    // Create header row - it will stay visible while the body scrolls
+    let thead = $("<thead>");
+    let headerRow = $("<tr>");
+    Object.keys(response[0]).forEach(key => {
+        headerRow.append($("<th>").text(key));
+    });
+    thead.append(headerRow);
+    table.append(thead);
 
-      container.append(table);
-  }
+    // Create body as before
+    let tbody = $("<tbody>");
+    response.forEach(row => {
+        let tr = $("<tr>");
+        Object.keys(row).forEach(key => {
+            let td = $("<td>");
+            let value = row[key];
+            
+            if (value && typeof value === "object" && value.href) {
+                td.append($("<a>").attr("href", value.href).attr("target", "_blank").text(value.text));
+            } else {
+                td.text(value);
+            }
+            tr.append(td);
+        });
+        tbody.append(tr);
+    });
+    table.append(tbody);
+
+    // 3. Append the entire table into our new scrollable wrapper
+    tableWrapper.append(table);
+
+    // 4. Finally, append the wrapper to the main container
+    container.append(tableWrapper);
+}
 
 
 });

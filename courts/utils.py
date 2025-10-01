@@ -1,8 +1,9 @@
 from .models import (
     Case, CaseDetails, CaseStatus, CategoryDetails,
-    CaseHistory, Order, IADetail
+    CaseHistory, Order, IADetail, CauseListEntry, QueryLog
 )
 from datetime import datetime
+import json
 
 def parse_date(date_str):
     """Helper: parse DD-MM-YYYY or '15th July 2024' etc."""
@@ -125,3 +126,72 @@ def save_case_from_json(data: dict):
         )
 
     return case
+
+
+def save_cause_list_from_json(json_data, list_date_str):
+    """
+    Parses a list of causelist items from JSON and saves them to the database.
+    It avoids creating duplicates by checking for existing entries based on
+    the date and serial number.
+
+    Args:
+        json_data (str or list): The JSON data as a string or a Python list of dicts.
+        list_date_str (str): The date for this causelist in 'YYYY-MM-DD' format.
+    """
+    # If the input is a JSON string, parse it into a Python list
+    if isinstance(json_data, str):
+        try:
+            causelist_items = json.loads(json_data)
+        except json.JSONDecodeError:
+            print("Error: Invalid JSON string provided.")
+            return
+    else:
+        causelist_items = json_data
+
+    created_count = 0
+    updated_count = 0
+
+    # Loop through each item in the parsed JSON list
+    for item in causelist_items:
+        try:
+            # The 'View Causelist' key contains a nested dictionary
+            view_details = item.get("View Causelist", {})
+
+            # Use update_or_create to prevent duplicates.
+            # We identify a unique entry by its date and serial number.
+            obj, created = CauseListEntry.objects.update_or_create(
+                list_date=list_date_str,
+                serial_number=item["Sr No"],
+                defaults={
+                    'bench': item["Bench"],
+                    'cause_list_type': item["Cause List Type"],
+                    'view_text': view_details.get("text", "View"),
+                    'view_href': view_details.get("href", "")
+                }
+            )
+
+            if created:
+                created_count += 1
+            else:
+                updated_count += 1
+
+        except KeyError as e:
+            print(f"Skipping an item because a required key is missing: {e}")
+        except Exception as e:
+            print(f"An unexpected error occurred: {e}")
+    
+    print(f"✅ Process complete. Created: {created_count}, Updated: {updated_count}")
+    
+
+def save_query_log(log_data, status, json_data, error_message):
+    # Always store as a JSON string
+    if isinstance(json_data, (dict, list)):
+        json_data_str = json.dumps(json_data, ensure_ascii=False)
+    else:
+        json_data_str = json_data
+    QueryLog.objects.create(
+        **log_data,
+        status=status,
+        raw_json_response=json_data_str
+    )
+    print("✅ Query Logged.")

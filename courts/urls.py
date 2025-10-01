@@ -5,7 +5,7 @@ urlpatterns = [
     path("", views.home, name="home"),
     path("high-court/", views.high_court_scraper_view, name="high_court"),
     path("district-court/", views.district_court_scraper_view, name="district_court"),
-    path("query-logs/", views.query_logs, name="query_logs"),
+    path("query-logs/", views.query_logs_view, name="query_logs"),
     
     
     path("api/highcourts/", views.get_high_courts, name="get_high_courts"),

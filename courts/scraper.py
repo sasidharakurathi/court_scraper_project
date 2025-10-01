@@ -561,11 +561,11 @@ class HighCourtCauseListScraper(CourtScraper):
             
 
         
-        json_result = self.parse_cause_lists(html_content, cause_date)
+        json_result = self.parse_cause_lists(html_content, cause_date, high_court, cause_bench)
         
         return json_result
         
-    def parse_cause_lists(self, html_content, cause_date):
+    def parse_cause_lists(self, html_content, cause_date, high_court, cause_bench):
         
         high_court_host_url = "https://hcservices.ecourts.gov.in/hcservices/"
         
@@ -590,11 +590,11 @@ class HighCourtCauseListScraper(CourtScraper):
                     cause_date = cause_date.replace('-', '')
                     pdf_filename = f"{cause_date}_{row_id+1}.pdf"
                     
-                    save_dir = os.path.join(settings.HIGHCOURT_CASELIST_PDF_DIR , cause_date)
+                    save_dir = os.path.join(settings.HIGHCOURT_CASELIST_PDF_DIR ,high_court,cause_bench, cause_date)
                     os.makedirs(save_dir, exist_ok=True)  # ensure folder exists
                     pdf_path = os.path.join(save_dir, pdf_filename)
                     
-                    static_path = os.path.join(settings.STATIC_HIGHCOURT_CASELIST_PDF_DIR, cause_date)
+                    static_path = os.path.join(settings.STATIC_HIGHCOURT_CASELIST_PDF_DIR,high_court,cause_bench, cause_date)
                     pdf_url = self.download_pdf(url, pdf_filename, pdf_path, static_path)
                     row_data[headers[i]] = {
                         "text": a_tag.get_text(strip=True),

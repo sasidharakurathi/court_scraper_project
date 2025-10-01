@@ -20,6 +20,9 @@ High Court Scraper:
     A227/8256/2024          ->      2090000-82562024
     A227/15806/2024         ->      209000 -158062024
 
+    ABA/676/2024            ->  Bombay High Court -> Appellate Side,Bombay
+    ABA/2080/2024           ->  Bombay High Court -> Appellate Side,Bombay
+
 
 data = {'highCourt': '13', 'bench': '1', 'caseType': '90', 'caseNumber': '8256', 'year': '2024', 'captchaText': '856wuh', 'csrfmiddlewaretoken': 'ykbc5pNZmsNfmT4WRlg7a7s2p2kjTFfZJFUj9vB1IRzmWAAfYRbm4oumv6eGdmAM'}
 
